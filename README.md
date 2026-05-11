@@ -1,6 +1,6 @@
 # Inventario Streetwear
 
-Plataforma web de gestión de inventario para una tienda de ropa urbana (streetwear), desarrollada como proyecto final universitario en la **Universidad Tecnológica de Pereira**. Permite administrar colecciones, prendas, stock, solicitudes a proveedores, salidas de bodega y generar reportes en tiempo real.
+Plataforma web de gestión de inventario para una tienda de ropa urbana (streetwear), desarrollada como proyecto final para la asignatura de Bases de Datos de la **Universidad Tecnológica de Pereira**. Permite administrar colecciones, prendas, stock, solicitudes a proveedores, salidas de bodega y generar reportes en tiempo real.
 
 ---
 
