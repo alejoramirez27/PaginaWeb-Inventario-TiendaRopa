@@ -7,7 +7,7 @@ export function proxy(request: NextRequest) {
   // Rutas públicas — no requieren sesión
   if (
     pathname === '/' ||
-    pathname === '/prototipo-ui.html' ||
+    pathname === '/ui-principal.html' ||
     pathname === '/login' ||
     pathname.startsWith('/api/auth/') ||
     pathname === '/favicon.ico'

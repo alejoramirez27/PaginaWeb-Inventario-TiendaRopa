@@ -577,10 +577,6 @@ tbody tr:nth-child(n+9){animation-delay:.18s}
       <div class="sb-uname" id="sb-uname">—</div>
       <div class="sb-urole" id="sb-urole">—</div>
     </div>
-    <div class="role-tgl">
-      <button class="rtbtn on" id="btn-adm" onclick="setRole('administrador')">Admin</button>
-      <button class="rtbtn" id="btn-bod" onclick="setRole('bodeguero')">Bodeguero</button>
-    </div>
     <button class="logout-btn" onclick="doLogout()">Cerrar sesión</button>
   </div>
 </aside>
@@ -1076,8 +1072,6 @@ function setRole(r){
   role=r;
   document.getElementById('sb-uname').textContent=currentUser?.nombre||'—';
   document.getElementById('sb-urole').textContent=r.toUpperCase();
-  document.getElementById('btn-adm').classList.toggle('on',r==='administrador');
-  document.getElementById('btn-bod').classList.toggle('on',r==='bodeguero');
   document.querySelectorAll('.adm').forEach(el=>{
     el.style.display=r==='administrador'?'':'none';
   });

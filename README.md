@@ -31,7 +31,6 @@ Las tiendas de streetwear manejan múltiples colecciones, referencias (SKUs) por
 | **React 19** | Componentes de interfaz con hooks |
 | **TypeScript** | Tipado estático en todo el proyecto |
 | **CSS-in-JS (inline styles)** | Estilos sin dependencias externas |
-| **Claude (Anthropic)** — IA | Asistente de desarrollo: diseño de UI, componentes, lógica de negocio y resolución de errores |
 
 ### Despliegue
 | Herramienta | Uso |
@@ -104,6 +103,10 @@ Este proyecto fue desarrollado con asistencia de **Claude (Anthropic)**, un mode
 - Diseño y maquetación de la interfaz de usuario (UI)
 - Implementación de componentes React y lógica de páginas
 - Diagnóstico y resolución de errores técnicos
+
+### Skill utilizada para el frontend
+
+El diseño visual de la interfaz se construyó con la skill **`/ui-ux-pro-max`** de Claude Code, un asistente especializado en UI/UX que incluye más de 50 estilos visuales, 161 paletas de color, 57 combinaciones tipográficas y guías de diseño para múltiples frameworks. Se utilizó para definir el sistema de colores oscuros, la tipografía (Bebas Neue + JetBrains Mono + Inter), los componentes del dashboard y las reglas de diseño minimalista aplicadas a toda la UI.
 
 ---
 
