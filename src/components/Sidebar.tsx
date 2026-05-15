@@ -1,7 +1,18 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
+import {
+  Squares2X2Icon,
+  RectangleStackIcon,
+  SwatchIcon,
+  ArchiveBoxIcon,
+  ClipboardDocumentListIcon,
+  ArrowUpTrayIcon,
+  UsersIcon,
+  PresentationChartBarIcon,
+} from '@heroicons/react/24/solid'
+import { MagnifyingGlassIcon, ArrowRightStartOnRectangleIcon } from '@heroicons/react/24/outline'
 
 interface Session {
   id:     string
@@ -10,14 +21,14 @@ interface Session {
 }
 
 const allLinks = [
-  { href: '/',            label: 'Dashboard',   icon: '📊', roles: ['administrador', 'bodeguero'] },
-  { href: '/colecciones', label: 'Colecciones', icon: '🗂️',  roles: ['administrador'] },
-  { href: '/prendas',     label: 'Prendas',     icon: '👕',  roles: ['administrador'] },
-  { href: '/inventario',  label: 'Inventario',  icon: '📦',  roles: ['administrador', 'bodeguero'] },
-  { href: '/solicitudes', label: 'Solicitudes', icon: '📋',  roles: ['administrador'] },
-  { href: '/salidas',     label: 'Salidas',     icon: '📤',  roles: ['administrador', 'bodeguero'] },
-  { href: '/clientes',    label: 'Aliados',     icon: '🤝',  roles: ['administrador', 'bodeguero'] },
-  { href: '/reportes',    label: 'Reportes',    icon: '📈',  roles: ['administrador', 'bodeguero'] },
+  { href: '/',            label: 'Dashboard',   Icon: Squares2X2Icon,             roles: ['administrador', 'bodeguero'] },
+  { href: '/colecciones', label: 'Colecciones', Icon: RectangleStackIcon,         roles: ['administrador'] },
+  { href: '/prendas',     label: 'Prendas',     Icon: SwatchIcon,                 roles: ['administrador'] },
+  { href: '/inventario',  label: 'Inventario',  Icon: ArchiveBoxIcon,             roles: ['administrador', 'bodeguero'] },
+  { href: '/solicitudes', label: 'Solicitudes', Icon: ClipboardDocumentListIcon,  roles: ['administrador'] },
+  { href: '/salidas',     label: 'Salidas',     Icon: ArrowUpTrayIcon,            roles: ['administrador', 'bodeguero'] },
+  { href: '/clientes',    label: 'Aliados',     Icon: UsersIcon,                  roles: ['administrador', 'bodeguero'] },
+  { href: '/reportes',    label: 'Reportes',    Icon: PresentationChartBarIcon,   roles: ['administrador', 'bodeguero'] },
 ]
 
 function parseSession(): Session | null {
@@ -32,17 +43,21 @@ function parseSession(): Session | null {
 }
 
 export default function Sidebar() {
-  const pathname = usePathname()
-  const router   = useRouter()
+  const pathname  = usePathname()
   const [session, setSession] = useState<Session | null>(null)
+  const [search,  setSearch]  = useState('')
 
   useEffect(() => {
     setSession(parseSession())
   }, [])
 
-  const links = session
+  const visibleLinks = (session
     ? allLinks.filter(l => l.roles.includes(session.rol))
     : allLinks
+  ).filter(l =>
+    search === '' ||
+    l.label.toLowerCase().includes(search.toLowerCase())
+  )
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -55,6 +70,7 @@ export default function Sidebar() {
       borderRight: '1px solid #27272a', display: 'flex', flexDirection: 'column',
       position: 'fixed', top: 0, left: 0, zIndex: 100, overflow: 'hidden',
     }}>
+
       {/* Marca */}
       <div style={{ padding: '28px 24px', borderBottom: '1px solid #27272a' }}>
         <p style={{ fontSize: '10px', color: '#52525b', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '6px' }}>
@@ -68,14 +84,44 @@ export default function Sidebar() {
         </p>
       </div>
 
+      {/* Búsqueda */}
+      <div style={{ padding: '12px 14px', borderBottom: '1px solid #27272a' }}>
+        <div style={{ position: 'relative' }}>
+          <MagnifyingGlassIcon style={{
+            position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)',
+            width: '14px', height: '14px', color: '#52525b', pointerEvents: 'none',
+          }} />
+          <input
+            type="text"
+            placeholder="Buscar sección..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              width: '100%', backgroundColor: '#1c1c1f',
+              border: '1px solid #27272a', borderRadius: '6px',
+              padding: '7px 10px 7px 30px', color: '#ffffff',
+              fontSize: '12px', outline: 'none',
+              transition: 'border-color 0.15s ease',
+            }}
+            onFocus={e  => (e.target.style.borderColor = '#3f3f46')}
+            onBlur={e   => (e.target.style.borderColor = '#27272a')}
+          />
+        </div>
+      </div>
+
       {/* Navegación */}
-      <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}>
-        {links.map((link) => {
-          const isActive = pathname === link.href
+      <nav style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
+        {visibleLinks.length === 0 && (
+          <p style={{ fontSize: '12px', color: '#52525b', textAlign: 'center', marginTop: '20px' }}>
+            Sin resultados
+          </p>
+        )}
+        {visibleLinks.map(({ href, label, Icon }) => {
+          const isActive = pathname === href
           return (
-            <Link key={link.href} href={link.href} style={{
+            <Link key={href} href={href} style={{
               display: 'flex', alignItems: 'center', gap: '10px',
-              padding: '10px 12px', marginBottom: '2px', borderRadius: '8px',
+              padding: '9px 12px', marginBottom: '2px', borderRadius: '8px',
               textDecoration: 'none', fontSize: '13.5px',
               fontWeight: isActive ? '600' : '400',
               color: isActive ? '#ffffff' : '#71717a',
@@ -83,10 +129,8 @@ export default function Sidebar() {
               borderLeft: isActive ? '3px solid #ffffff' : '3px solid transparent',
               transition: 'all 0.15s ease',
             }}>
-              <span style={{ fontSize: '15px', width: '20px', textAlign: 'center' }}>
-                {link.icon}
-              </span>
-              {link.label}
+              <Icon style={{ width: '17px', height: '17px', flexShrink: 0 }} />
+              {label}
             </Link>
           )
         })}
@@ -114,13 +158,24 @@ export default function Sidebar() {
         <button
           onClick={handleLogout}
           style={{
-            width: '100%', backgroundColor: '#27272a',
-            border: '1px solid #3f3f46', borderRadius: '6px',
-            padding: '10px 12px', color: '#ffffff', fontSize: '12px',
-            fontWeight: '500', cursor: 'pointer', textAlign: 'center',
+            width: '100%', backgroundColor: '#1c1c1f',
+            border: '1px solid #27272a', borderRadius: '6px',
+            padding: '9px 12px', color: '#71717a', fontSize: '12px',
+            fontWeight: '500', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.color = '#ffffff'
+            ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#3f3f46'
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.color = '#71717a'
+            ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#27272a'
           }}
         >
-          Cerrar sesión →
+          <ArrowRightStartOnRectangleIcon style={{ width: '15px', height: '15px' }} />
+          Cerrar sesión
         </button>
       </div>
     </aside>
