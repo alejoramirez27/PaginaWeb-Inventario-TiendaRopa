@@ -185,8 +185,8 @@ export default function PrendasPage() {
               <div
                 onClick={() => togglePrenda(prenda.id_prenda)}
                 style={{
-                  display: 'grid', gridTemplateColumns: '28px 2fr 1fr 1fr 1fr auto',
-                  alignItems: 'center', padding: '14px 22px',
+                  display: 'grid', gridTemplateColumns: '28px 2fr auto 1fr auto auto',
+                  alignItems: 'center', gap: '12px', padding: '14px 22px',
                   borderBottom: '1px solid #1c1c1f', cursor: 'pointer',
                   backgroundColor: expandida === prenda.id_prenda ? '#18181b' : 'transparent',
                   transition: 'background-color 0.1s',
