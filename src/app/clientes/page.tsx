@@ -1,5 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { toast }    from 'sonner'
+import { Button }   from '@/components/ui/button'
+import { Badge }    from '@/components/ui/badge'
+import { Input }    from '@/components/ui/input'
+import { Label }    from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Plus, Pencil, Search } from 'lucide-react'
 
 interface Cliente {
   id_cliente:   string
@@ -16,8 +23,6 @@ const formVacio = { nombre: '', ciudad: '', departamento: '', telefono: '', emai
 export default function ClientesPage() {
   const [clientes, setClientes]       = useState<Cliente[]>([])
   const [loading, setLoading]         = useState(true)
-  const [error, setError]             = useState('')
-  const [exito, setExito]             = useState('')
   const [mostrarForm, setMostrarForm] = useState(false)
   const [guardando, setGuardando]     = useState(false)
   const [editando, setEditando]       = useState<Cliente | null>(null)
@@ -35,44 +40,27 @@ export default function ClientesPage() {
   useEffect(() => { cargar() }, [])
 
   const abrirNuevo = () => {
-    setEditando(null)
-    setForm(formVacio)
-    setMostrarForm(true)
+    setEditando(null); setForm(formVacio); setMostrarForm(true)
   }
 
   const abrirEdicion = (c: Cliente) => {
     setEditando(c)
-    setForm({
-      nombre:       c.nombre,
-      ciudad:       c.ciudad,
-      departamento: c.departamento ?? '',
-      telefono:     c.telefono    ?? '',
-      email:        c.email       ?? '',
-    })
+    setForm({ nombre: c.nombre, ciudad: c.ciudad, departamento: c.departamento ?? '', telefono: c.telefono ?? '', email: c.email ?? '' })
     setMostrarForm(true)
   }
 
   const handleGuardar = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setGuardando(true); setError('')
-
+    e.preventDefault(); setGuardando(true)
     const url    = editando ? `/api/clientes/${editando.id_cliente}` : '/api/clientes'
     const method = editando ? 'PATCH' : 'POST'
-    const body   = editando
-      ? { ...form, estado: editando.estado }
-      : form
-
-    const res  = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    const data = await res.json()
-
-    if (!res.ok) { setError(data.error) }
-    else {
-      setExito(editando ? 'Aliado actualizado correctamente' : 'Aliado registrado correctamente')
-      setMostrarForm(false)
-      setEditando(null)
-      setForm(formVacio)
-      cargar()
-      setTimeout(() => setExito(''), 4000)
+    const body   = editando ? { ...form, estado: editando.estado } : form
+    const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const data   = await res.json()
+    if (!res.ok) {
+      toast.error(data.error ?? 'Error al guardar')
+    } else {
+      toast.success(editando ? 'Aliado actualizado' : 'Aliado registrado')
+      setMostrarForm(false); setEditando(null); setForm(formVacio); cargar()
     }
     setGuardando(false)
   }
@@ -84,10 +72,11 @@ export default function ClientesPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...c, estado: nuevoEstado }),
     })
+    toast.success(nuevoEstado === 'activo' ? `"${c.nombre}" activado` : `"${c.nombre}" desactivado`)
     cargar()
   }
 
-  const clientesFiltrados = clientes.filter(c =>
+  const filtrados = clientes.filter(c =>
     c.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
     c.ciudad.toLowerCase().includes(busqueda.toLowerCase()) ||
     (c.departamento ?? '').toLowerCase().includes(busqueda.toLowerCase())
@@ -98,192 +87,157 @@ export default function ClientesPage() {
 
   return (
     <div>
-      {/* Encabezado */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
         <div>
-          <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>Aliados Multimarca</h2>
-          <p style={{ fontSize: '14px', color: '#52525b', marginTop: '4px' }}>
-            Tiendas aliadas donde se distribuyen las prendas — trazabilidad de despachos
+          <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#ffffff' }}>Aliados Multimarca</h2>
+          <p style={{ fontSize: '12px', color: '#52525b', marginTop: '4px' }}>
+            Tiendas aliadas — trazabilidad de despachos
           </p>
         </div>
-        <button onClick={abrirNuevo} style={btnPrimario}>+ Nuevo Aliado</button>
+        <Button size="sm" onClick={abrirNuevo}>
+          <Plus style={{ width: '14px', height: '14px' }} />
+          Nuevo Aliado
+        </Button>
       </div>
 
-      {/* Métricas */}
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+      {/* ── Métricas ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
         {[
-          { label: 'Total aliados',  value: clientes.length, color: '#ffffff' },
-          { label: 'Activos',        value: activos,          color: '#22c55e' },
-          { label: 'Inactivos',      value: inactivos,        color: '#71717a' },
+          { label: 'Total aliados', value: clientes.length, color: '#ffffff' },
+          { label: 'Activos',       value: activos,         color: '#22c55e' },
+          { label: 'Inactivos',     value: inactivos,       color: '#3f3f46' },
         ].map(m => (
-          <div key={m.label} style={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', padding: '20px 28px', flex: 1 }}>
-            <p style={{ fontSize: '11px', color: '#52525b', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>{m.label}</p>
-            <p style={{ fontSize: '28px', fontWeight: '700', color: m.color }}>{m.value}</p>
+          <div key={m.label} style={{ backgroundColor: '#111113', border: '1px solid #27272a', borderRadius: '12px', padding: '16px 18px' }}>
+            <p style={{ fontSize: '10px', color: '#52525b', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>{m.label}</p>
+            <p style={{ fontSize: '24px', fontWeight: '700', color: m.color, fontFamily: 'var(--font-mono)' }}>{m.value}</p>
           </div>
         ))}
       </div>
 
-      {error && <div style={estiloError}>⚠ {error}</div>}
-      {exito && <div style={estiloExito}>✓ {exito}</div>}
-
-      {/* Formulario */}
+      {/* ── Formulario ── */}
       {mostrarForm && (
-        <div style={cardStyle}>
+        <div style={{ backgroundColor: '#111113', border: '1px solid #27272a', borderRadius: '12px', padding: '24px', marginBottom: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff' }}>
+            <p style={{ fontSize: '12px', fontWeight: '600', color: '#ffffff', textTransform: 'uppercase', letterSpacing: '1px' }}>
               {editando ? 'Editar Aliado' : 'Registrar Nuevo Aliado'}
-            </h3>
+            </p>
             <button onClick={() => setMostrarForm(false)}
-              style={{ background: 'none', border: 'none', color: '#52525b', cursor: 'pointer', fontSize: '18px' }}>
+              style={{ background: 'none', border: 'none', color: '#3f3f46', cursor: 'pointer', fontSize: '16px', lineHeight: 1 }}>
               ✕
             </button>
           </div>
           <form onSubmit={handleGuardar}>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-              <div>
-                <label style={labelStyle}>Nombre del aliado *</label>
-                <input required value={form.nombre}
-                  onChange={e => setForm({ ...form, nombre: e.target.value })}
-                  placeholder="ej: Tienda Urban District"
-                  style={inputStyle} />
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <Label>Nombre del aliado *</Label>
+                <Input required value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="ej: Tienda Urban District" />
               </div>
-              <div>
-                <label style={labelStyle}>Ciudad *</label>
-                <input required value={form.ciudad}
-                  onChange={e => setForm({ ...form, ciudad: e.target.value })}
-                  placeholder="ej: Medellín"
-                  style={inputStyle} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <Label>Ciudad *</Label>
+                <Input required value={form.ciudad} onChange={e => setForm({ ...form, ciudad: e.target.value })} placeholder="ej: Medellín" />
               </div>
-              <div>
-                <label style={labelStyle}>Departamento</label>
-                <input value={form.departamento}
-                  onChange={e => setForm({ ...form, departamento: e.target.value })}
-                  placeholder="ej: Antioquia"
-                  style={inputStyle} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <Label>Departamento</Label>
+                <Input value={form.departamento} onChange={e => setForm({ ...form, departamento: e.target.value })} placeholder="ej: Antioquia" />
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-              <div>
-                <label style={labelStyle}>Teléfono</label>
-                <input value={form.telefono}
-                  onChange={e => setForm({ ...form, telefono: e.target.value })}
-                  placeholder="ej: 3001234567"
-                  style={inputStyle} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <Label>Teléfono</Label>
+                <Input value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} placeholder="ej: 3001234567" />
               </div>
-              <div>
-                <label style={labelStyle}>Email</label>
-                <input type="email" value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                  placeholder="contacto@tienda.com"
-                  style={inputStyle} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <Label>Email</Label>
+                <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="contacto@tienda.com" />
               </div>
             </div>
-            <button type="submit" disabled={guardando}
-              style={{ ...btnPrimario, opacity: guardando ? 0.6 : 1 }}>
-              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Registrar Aliado'}
-            </button>
+            <Button type="submit" disabled={guardando} size="sm">
+              {guardando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Registrar Aliado'}
+            </Button>
           </form>
         </div>
       )}
 
-      {/* Buscador */}
-      <div style={{ marginBottom: '16px' }}>
-        <input
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-          placeholder="Buscar por nombre, ciudad o departamento..."
-          style={{ ...inputStyle, maxWidth: '400px' }}
-        />
+      {/* ── Buscador ── */}
+      <div style={{ position: 'relative', marginBottom: '16px', maxWidth: '360px' }}>
+        <Search style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '13px', height: '13px', color: '#3f3f46' }} />
+        <Input value={busqueda} onChange={e => setBusqueda(e.target.value)}
+          placeholder="Buscar por nombre, ciudad…" style={{ paddingLeft: '32px' }} />
       </div>
 
-      {/* Lista de aliados */}
-      <div style={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 110px 180px', padding: '12px 24px', borderBottom: '1px solid #27272a' }}>
-          {['Aliado', 'Ciudad', 'Contacto', 'Estado', 'Acciones'].map(h => (
-            <p key={h} style={{ fontSize: '11px', color: '#52525b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px', textAlign: h === 'Estado' ? 'center' : 'left' }}>{h}</p>
-          ))}
-        </div>
-
-        {loading ? (
-          <div style={{ padding: '48px', textAlign: 'center' }}>
-            <p style={{ color: '#3f3f46', fontSize: '13px', letterSpacing: '2px' }}>CARGANDO...</p>
-          </div>
-        ) : clientesFiltrados.length === 0 ? (
-          <div style={{ padding: '48px', textAlign: 'center' }}>
-            <p style={{ color: '#3f3f46', fontSize: '14px' }}>
-              {busqueda ? 'No se encontraron aliados con ese filtro' : 'No hay aliados registrados'}
-            </p>
-          </div>
-        ) : (
-          clientesFiltrados.map((c) => (
-            <div key={c.id_cliente} style={{
-              display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 110px 180px',
-              alignItems: 'center', padding: '16px 24px',
-              borderBottom: '1px solid #1c1c1f',
-              opacity: c.estado === 'inactivo' ? 0.5 : 1,
-            }}>
-              <div>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>{c.nombre}</p>
-                {c.email && <p style={{ fontSize: '12px', color: '#52525b', marginTop: '2px' }}>{c.email}</p>}
-              </div>
-              <div>
-                <p style={{ fontSize: '13px', color: '#ffffff' }}>{c.ciudad}</p>
-                {c.departamento && <p style={{ fontSize: '12px', color: '#52525b', marginTop: '2px' }}>{c.departamento}</p>}
-              </div>
-              <p style={{ fontSize: '13px', color: '#a1a1aa' }}>{c.telefono ?? '—'}</p>
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '5px',
-                  fontSize: '11px', fontWeight: '600', padding: '4px 10px',
-                  borderRadius: '999px',
-                  backgroundColor: c.estado === 'activo' ? '#052e16' : '#1c1c1f',
-                  color: c.estado === 'activo' ? '#22c55e' : '#52525b',
-                  border: `1px solid ${c.estado === 'activo' ? '#166534' : '#27272a'}`,
-                }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: c.estado === 'activo' ? '#22c55e' : '#52525b', flexShrink: 0 }} />
-                  {c.estado}
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => abrirEdicion(c)}
-                  style={{ background: 'none', border: '1px solid #27272a', borderRadius: '6px', padding: '6px 12px', color: '#a1a1aa', fontSize: '12px', cursor: 'pointer' }}>
-                  Editar
-                </button>
-                <button onClick={() => toggleEstado(c)}
-                  style={{ background: 'none', border: '1px solid #27272a', borderRadius: '6px', padding: '6px 12px', color: c.estado === 'activo' ? '#ef4444' : '#22c55e', fontSize: '12px', cursor: 'pointer' }}>
-                  {c.estado === 'activo' ? 'Desactivar' : 'Activar'}
-                </button>
-              </div>
-            </div>
-          ))
-        )}
+      {/* ── Lista ── */}
+      <div style={{ backgroundColor: '#111113', border: '1px solid #27272a', borderRadius: '12px', overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid #1c1c1f' }}>
+              {['Aliado', 'Ciudad', 'Teléfono', 'Estado', 'Acciones'].map(h => (
+                <th key={h} style={thStyle}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading && Array.from({ length: 4 }).map((_, i) => (
+              <tr key={i}>
+                <td colSpan={5} style={{ padding: '10px 22px' }}>
+                  <Skeleton style={{ height: '14px', borderRadius: '4px' }} />
+                </td>
+              </tr>
+            ))}
+            {!loading && filtrados.length === 0 && (
+              <tr>
+                <td colSpan={5} style={{ padding: '48px', textAlign: 'center', color: '#3f3f46', fontSize: '13px' }}>
+                  {busqueda ? 'Sin resultados para ese filtro' : 'No hay aliados registrados'}
+                </td>
+              </tr>
+            )}
+            {!loading && filtrados.map(c => (
+              <tr key={c.id_cliente}
+                style={{ borderBottom: '1px solid #1c1c1f', opacity: c.estado === 'inactivo' ? 0.5 : 1 }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#18181b')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <td style={{ padding: '14px 22px' }}>
+                  <p style={{ fontSize: '13px', fontWeight: '600', color: '#ffffff' }}>{c.nombre}</p>
+                  {c.email && <p style={{ fontSize: '11px', color: '#52525b', marginTop: '2px' }}>{c.email}</p>}
+                </td>
+                <td style={{ padding: '14px 22px' }}>
+                  <p style={{ fontSize: '13px', color: '#e4e4e7' }}>{c.ciudad}</p>
+                  {c.departamento && <p style={{ fontSize: '11px', color: '#52525b', marginTop: '2px' }}>{c.departamento}</p>}
+                </td>
+                <td style={{ padding: '14px 22px', fontSize: '13px', color: '#71717a', fontFamily: 'var(--font-mono)' }}>
+                  {c.telefono ?? '—'}
+                </td>
+                <td style={{ padding: '14px 22px' }}>
+                  <Badge variant={c.estado === 'activo' ? 'success' : 'secondary'}>
+                    {c.estado}
+                  </Badge>
+                </td>
+                <td style={{ padding: '14px 22px' }}>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <Button variant="outline" size="icon-sm" onClick={() => abrirEdicion(c)} title="Editar">
+                      <Pencil style={{ width: '12px', height: '12px' }} />
+                    </Button>
+                    <Button
+                      variant={c.estado === 'activo' ? 'destructive' : 'outline'}
+                      size="sm"
+                      onClick={() => toggleEstado(c)}
+                    >
+                      {c.estado === 'activo' ? 'Desactivar' : 'Activar'}
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
 }
 
-// ── Estilos ──────────────────────────────────────────────
-const inputStyle: React.CSSProperties = {
-  width: '100%', backgroundColor: '#09090b', border: '1px solid #27272a',
-  borderRadius: '8px', padding: '10px 14px', fontSize: '14px', color: '#ffffff', outline: 'none',
-}
-const labelStyle: React.CSSProperties = {
-  fontSize: '12px', color: '#71717a', textTransform: 'uppercase',
-  letterSpacing: '1px', display: 'block', marginBottom: '8px',
-}
-const btnPrimario: React.CSSProperties = {
-  backgroundColor: '#ffffff', color: '#09090b', border: 'none',
-  borderRadius: '8px', padding: '10px 20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-}
-const cardStyle: React.CSSProperties = {
-  backgroundColor: '#18181b', border: '1px solid #27272a',
-  borderRadius: '12px', padding: '24px', marginBottom: '24px',
-}
-const estiloError: React.CSSProperties = {
-  backgroundColor: '#1c0a0a', border: '1px solid #7f1d1d', borderRadius: '8px',
-  padding: '14px 18px', marginBottom: '20px', color: '#ef4444', fontSize: '14px',
-}
-const estiloExito: React.CSSProperties = {
-  backgroundColor: '#052e16', border: '1px solid #166534', borderRadius: '8px',
-  padding: '14px 18px', marginBottom: '20px', color: '#22c55e', fontSize: '14px',
+const thStyle: React.CSSProperties = {
+  padding: '10px 22px', textAlign: 'left',
+  fontSize: '10px', color: '#3f3f46', fontWeight: '500',
+  textTransform: 'uppercase', letterSpacing: '1.5px', whiteSpace: 'nowrap',
 }

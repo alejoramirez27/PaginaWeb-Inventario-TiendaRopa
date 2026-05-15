@@ -1,385 +1,196 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { toast }    from 'sonner'
+import { Button }   from '@/components/ui/button'
+import { Badge }    from '@/components/ui/badge'
+import { Input }    from '@/components/ui/input'
+import { Label }    from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Plus, Zap, Trash2 } from 'lucide-react'
 
 interface Coleccion {
-  id_coleccion: string
-  nombre: string
-  temporada: string
+  id_coleccion:      string
+  nombre:            string
+  temporada:         string
   fecha_lanzamiento: string
-  estado: 'activa' | 'inactiva'
+  estado:            'activa' | 'inactiva'
 }
 
-// ── Componente badge de estado ─────────────────────────
-function EstadoBadge({ estado }: { estado: string }) {
-  const activa = estado === 'activa'
-  return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '6px',
-      padding: '4px 12px',
-      borderRadius: '999px',
-      fontSize: '12px',
-      fontWeight: '600',
-      backgroundColor: activa ? '#14532d' : '#1c1c1f',
-      color: activa ? '#22c55e' : '#71717a',
-      border: `1px solid ${activa ? '#166534' : '#27272a'}`,
-    }}>
-      <span style={{
-        width: '6px', height: '6px',
-        borderRadius: '50%',
-        backgroundColor: activa ? '#22c55e' : '#52525b',
-      }} />
-      {activa ? 'ACTIVA' : 'INACTIVA'}
-    </span>
-  )
+function fmtFecha(s: string) {
+  if (!s) return '—'
+  return new Date(s).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-// ── Página principal ───────────────────────────────────
 export default function ColeccionesPage() {
   const [colecciones, setColecciones] = useState<Coleccion[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [exito, setExito] = useState('')
+  const [loading, setLoading]         = useState(true)
   const [mostrarForm, setMostrarForm] = useState(false)
+  const [guardando, setGuardando]     = useState(false)
+  const [form, setForm] = useState({ nombre: '', temporada: '', fecha_lanzamiento: '', estado: 'inactiva' })
 
-  // Estado del formulario
-  const [form, setForm] = useState({
-    nombre: '',
-    temporada: '',
-    fecha_lanzamiento: '',
-    estado: 'inactiva',
-  })
-  const [guardando, setGuardando] = useState(false)
-
-  // ── Cargar colecciones ─────────────────────────────
-  const cargarColecciones = () => {
+  const cargar = () => {
     setLoading(true)
     fetch('/api/colecciones')
-      .then(res => res.json())
-      .then(data => {
-        setColecciones(data)
-        setLoading(false)
-      })
+      .then(r => r.json())
+      .then(d => { setColecciones(d); setLoading(false) })
   }
 
-  useEffect(() => { cargarColecciones() }, [])
+  useEffect(() => { cargar() }, [])
 
-  // ── Crear colección ────────────────────────────────
   const handleCrear = async (e: React.FormEvent) => {
     e.preventDefault()
     setGuardando(true)
-    setError('')
-
-    const res = await fetch('/api/colecciones', {
+    const res  = await fetch('/api/colecciones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     })
     const data = await res.json()
-
     if (!res.ok) {
-      setError(data.error)
+      toast.error(data.error ?? 'Error al crear la colección')
     } else {
-      setExito('Colección creada correctamente')
+      toast.success('Colección creada correctamente')
       setForm({ nombre: '', temporada: '', fecha_lanzamiento: '', estado: 'inactiva' })
       setMostrarForm(false)
-      cargarColecciones()
-      setTimeout(() => setExito(''), 3000)
+      cargar()
     }
     setGuardando(false)
   }
 
-  // ── Activar colección ──────────────────────────────
-  const handleActivar = async (coleccion: Coleccion) => {
-    if (coleccion.estado === 'activa') return
-    setError('')
-
-    const res = await fetch(`/api/colecciones/${coleccion.id_coleccion}`, {
+  const handleActivar = async (col: Coleccion) => {
+    if (col.estado === 'activa') return
+    const res  = await fetch(`/api/colecciones/${col.id_coleccion}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...coleccion, estado: 'activa' }),
+      body: JSON.stringify({ ...col, estado: 'activa' }),
     })
     const data = await res.json()
-
-    if (!res.ok) {
-      setError(data.error)
-    } else {
-      setExito(`"${coleccion.nombre}" activada correctamente`)
-      cargarColecciones()
-      setTimeout(() => setExito(''), 3000)
-    }
+    if (!res.ok) toast.error(data.error ?? 'Error al activar')
+    else { toast.success(`"${col.nombre}" activada`); cargar() }
   }
 
-  // ── Eliminar colección ─────────────────────────────
-  const handleEliminar = async (coleccion: Coleccion) => {
-    if (!confirm(`¿Eliminar la colección "${coleccion.nombre}"?`)) return
-    setError('')
-
-    const res = await fetch(`/api/colecciones/${coleccion.id_coleccion}`, {
-      method: 'DELETE',
-    })
+  const handleEliminar = async (col: Coleccion) => {
+    if (!confirm(`¿Eliminar "${col.nombre}"?`)) return
+    const res  = await fetch(`/api/colecciones/${col.id_coleccion}`, { method: 'DELETE' })
     const data = await res.json()
-
-    if (!res.ok) {
-      setError(data.error)
-    } else {
-      setExito('Colección eliminada')
-      cargarColecciones()
-      setTimeout(() => setExito(''), 3000)
-    }
+    if (!res.ok) toast.error(data.error ?? 'Error al eliminar')
+    else { toast.success('Colección eliminada'); cargar() }
   }
 
-  // ── Render ─────────────────────────────────────────
   return (
     <div>
-
-      {/* Encabezado */}
+      {/* ── Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
         <div>
-          <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>Colecciones</h2>
-          <p style={{ fontSize: '14px', color: '#52525b', marginTop: '4px' }}>
-            Gestiona las colecciones de la tienda — solo puede haber una activa a la vez
+          <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#ffffff' }}>Colecciones</h2>
+          <p style={{ fontSize: '12px', color: '#52525b', marginTop: '4px' }}>
+            Solo puede haber una colección activa a la vez
           </p>
         </div>
-        <button
-          onClick={() => setMostrarForm(!mostrarForm)}
-          style={{
-            backgroundColor: '#ffffff',
-            color: '#09090b',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '10px 20px',
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-          }}
-        >
-          {mostrarForm ? 'Cancelar' : '+ Nueva Colección'}
-        </button>
+        <Button onClick={() => setMostrarForm(!mostrarForm)} size="sm">
+          <Plus style={{ width: '14px', height: '14px' }} />
+          {mostrarForm ? 'Cancelar' : 'Nueva Colección'}
+        </Button>
       </div>
 
-      {/* Mensajes de error / éxito */}
-      {error && (
-        <div style={{
-          backgroundColor: '#1c0a0a',
-          border: '1px solid #7f1d1d',
-          borderRadius: '8px',
-          padding: '14px 18px',
-          marginBottom: '20px',
-          color: '#ef4444',
-          fontSize: '14px',
-        }}>
-          ⚠ {error}
-        </div>
-      )}
-      {exito && (
-        <div style={{
-          backgroundColor: '#052e16',
-          border: '1px solid #166534',
-          borderRadius: '8px',
-          padding: '14px 18px',
-          marginBottom: '20px',
-          color: '#22c55e',
-          fontSize: '14px',
-        }}>
-          ✓ {exito}
-        </div>
-      )}
-
-      {/* Formulario de nueva colección */}
+      {/* ── Formulario ── */}
       {mostrarForm && (
-        <div style={{
-          backgroundColor: '#18181b',
-          border: '1px solid #27272a',
-          borderRadius: '12px',
-          padding: '24px',
-          marginBottom: '24px',
-        }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '20px', color: '#ffffff' }}>
+        <div style={{ backgroundColor: '#111113', border: '1px solid #27272a', borderRadius: '12px', padding: '24px', marginBottom: '20px' }}>
+          <p style={{ fontSize: '12px', fontWeight: '600', color: '#ffffff', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1px' }}>
             Nueva Colección
-          </h3>
+          </p>
           <form onSubmit={handleCrear}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-
-              {/* Nombre */}
-              <div>
-                <label style={{ fontSize: '12px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '8px' }}>
-                  Nombre *
-                </label>
-                <input
-                  required
-                  value={form.nombre}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <Label>Nombre *</Label>
+                <Input required value={form.nombre}
                   onChange={e => setForm({ ...form, nombre: e.target.value })}
-                  placeholder="ej: Colección Otoño 2025"
-                  style={inputStyle}
-                />
+                  placeholder="ej: Colección Otoño 2025" />
               </div>
-
-              {/* Temporada */}
-              <div>
-                <label style={{ fontSize: '12px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '8px' }}>
-                  Temporada *
-                </label>
-                <input
-                  required
-                  value={form.temporada}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <Label>Temporada *</Label>
+                <Input required value={form.temporada}
                   onChange={e => setForm({ ...form, temporada: e.target.value })}
-                  placeholder="ej: Otoño-Invierno 2025"
-                  style={inputStyle}
-                />
+                  placeholder="ej: Otoño-Invierno 2025" />
               </div>
-
-              {/* Fecha lanzamiento */}
-              <div>
-                <label style={{ fontSize: '12px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '8px' }}>
-                  Fecha de Lanzamiento
-                </label>
-                <input
-                  type="date"
-                  value={form.fecha_lanzamiento}
-                  onChange={e => setForm({ ...form, fecha_lanzamiento: e.target.value })}
-                  style={inputStyle}
-                />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <Label>Fecha de Lanzamiento</Label>
+                <Input type="date" value={form.fecha_lanzamiento}
+                  onChange={e => setForm({ ...form, fecha_lanzamiento: e.target.value })} />
               </div>
-
-              {/* Estado inicial */}
-              <div>
-                <label style={{ fontSize: '12px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '8px' }}>
-                  Estado Inicial
-                </label>
-                <select
-                  value={form.estado}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <Label>Estado Inicial</Label>
+                <select value={form.estado}
                   onChange={e => setForm({ ...form, estado: e.target.value })}
-                  style={inputStyle}
-                >
+                  style={selectStyle}>
                   <option value="inactiva">Inactiva</option>
                   <option value="activa">Activa</option>
                 </select>
               </div>
             </div>
-
-            <button
-              type="submit"
-              disabled={guardando}
-              style={{
-                backgroundColor: '#ffffff',
-                color: '#09090b',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '10px 24px',
-                fontSize: '13px',
-                fontWeight: '600',
-                cursor: guardando ? 'not-allowed' : 'pointer',
-                opacity: guardando ? 0.6 : 1,
-              }}
-            >
-              {guardando ? 'Guardando...' : 'Crear Colección'}
-            </button>
+            <Button type="submit" disabled={guardando} size="sm">
+              {guardando ? 'Guardando…' : 'Crear Colección'}
+            </Button>
           </form>
         </div>
       )}
 
-      {/* Tabla de colecciones */}
-      <div style={{
-        backgroundColor: '#18181b',
-        border: '1px solid #27272a',
-        borderRadius: '12px',
-        overflow: 'hidden',
-      }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #27272a' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff' }}>
-            Todas las colecciones
-            <span style={{ marginLeft: '10px', fontSize: '13px', color: '#52525b', fontWeight: '400' }}>
-              ({colecciones.length})
-            </span>
+      {/* ── Tabla ── */}
+      <div style={{ backgroundColor: '#111113', border: '1px solid #27272a', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ padding: '16px 22px', borderBottom: '1px solid #27272a' }}>
+          <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#ffffff' }}>
+            Todas las colecciones{' '}
+            <span style={{ color: '#52525b', fontWeight: '400' }}>({colecciones.length})</span>
           </h3>
         </div>
 
         {loading ? (
-          <div style={{ padding: '48px', textAlign: 'center' }}>
-            <p style={{ color: '#3f3f46', fontSize: '13px', letterSpacing: '2px' }}>CARGANDO...</p>
+          <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} style={{ height: '44px', borderRadius: '6px' }} />)}
           </div>
         ) : colecciones.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center' }}>
-            <p style={{ color: '#3f3f46', fontSize: '14px' }}>No hay colecciones registradas</p>
-            <p style={{ color: '#27272a', fontSize: '12px', marginTop: '8px' }}>Crea la primera usando el botón de arriba</p>
+            <p style={{ color: '#3f3f46', fontSize: '13px' }}>No hay colecciones registradas</p>
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #27272a' }}>
+              <tr style={{ borderBottom: '1px solid #1c1c1f' }}>
                 {['Nombre', 'Temporada', 'Lanzamiento', 'Estado', 'Acciones'].map(h => (
-                  <th key={h} style={{
-                    padding: '12px 24px',
-                    textAlign: 'left',
-                    fontSize: '11px',
-                    color: '#52525b',
-                    fontWeight: '600',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px',
-                  }}>
-                    {h}
-                  </th>
+                  <th key={h} style={thStyle}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {colecciones.map((col, i) => (
-                <tr
-                  key={col.id_coleccion}
-                  style={{ borderBottom: i < colecciones.length - 1 ? '1px solid #1c1c1f' : 'none' }}
+              {colecciones.map(col => (
+                <tr key={col.id_coleccion} style={{ borderBottom: '1px solid #1c1c1f' }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#18181b')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
-                  <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>
+                  <td style={{ padding: '14px 22px', fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>
                     {col.nombre}
                   </td>
-                  <td style={{ padding: '16px 24px', fontSize: '13px', color: '#a1a1aa' }}>
+                  <td style={{ padding: '14px 22px', fontSize: '13px', color: '#71717a' }}>
                     {col.temporada || '—'}
                   </td>
-                  <td style={{ padding: '16px 24px', fontSize: '13px', color: '#a1a1aa' }}>
-                    {col.fecha_lanzamiento
-                      ? new Date(col.fecha_lanzamiento).toLocaleDateString('es-CO')
-                      : '—'}
+                  <td style={{ padding: '14px 22px', fontSize: '13px', color: '#71717a' }}>
+                    {fmtFecha(col.fecha_lanzamiento)}
                   </td>
-                  <td style={{ padding: '16px 24px' }}>
-                    <EstadoBadge estado={col.estado} />
+                  <td style={{ padding: '14px 22px' }}>
+                    <Badge variant={col.estado === 'activa' ? 'success' : 'secondary'}>
+                      {col.estado === 'activa' ? 'Activa' : 'Inactiva'}
+                    </Badge>
                   </td>
-                  <td style={{ padding: '16px 24px' }}>
+                  <td style={{ padding: '14px 22px' }}>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      {/* Botón activar */}
                       {col.estado === 'inactiva' && (
-                        <button
-                          onClick={() => handleActivar(col)}
-                          style={{
-                            backgroundColor: 'transparent',
-                            border: '1px solid #27272a',
-                            borderRadius: '6px',
-                            padding: '6px 14px',
-                            fontSize: '12px',
-                            color: '#a1a1aa',
-                            cursor: 'pointer',
-                            fontWeight: '500',
-                          }}
-                        >
-                          Activar
-                        </button>
+                        <Button variant="outline" size="icon-sm" onClick={() => handleActivar(col)} title="Activar">
+                          <Zap style={{ width: '12px', height: '12px' }} />
+                        </Button>
                       )}
-                      {/* Botón eliminar */}
-                      <button
-                        onClick={() => handleEliminar(col)}
-                        style={{
-                          backgroundColor: 'transparent',
-                          border: '1px solid #27272a',
-                          borderRadius: '6px',
-                          padding: '6px 14px',
-                          fontSize: '12px',
-                          color: '#ef4444',
-                          cursor: 'pointer',
-                          fontWeight: '500',
-                        }}
-                      >
-                        Eliminar
-                      </button>
+                      <Button variant="destructive" size="icon-sm" onClick={() => handleEliminar(col)} title="Eliminar">
+                        <Trash2 style={{ width: '12px', height: '12px' }} />
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -392,14 +203,15 @@ export default function ColeccionesPage() {
   )
 }
 
-// ── Estilos reutilizables ──────────────────────────────
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  backgroundColor: '#09090b',
-  border: '1px solid #27272a',
-  borderRadius: '8px',
-  padding: '10px 14px',
-  fontSize: '14px',
-  color: '#ffffff',
-  outline: 'none',
+const thStyle: React.CSSProperties = {
+  padding: '10px 22px', textAlign: 'left',
+  fontSize: '10px', color: '#3f3f46', fontWeight: '500',
+  textTransform: 'uppercase', letterSpacing: '1.5px', whiteSpace: 'nowrap',
+}
+
+const selectStyle: React.CSSProperties = {
+  width: '100%', height: '36px',
+  backgroundColor: '#18181b', border: '1px solid #27272a',
+  borderRadius: '6px', padding: '0 12px',
+  fontSize: '13px', color: '#e4e4e7', outline: 'none',
 }
