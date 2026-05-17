@@ -9,7 +9,7 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from('sku')
-    .select('*')
+    .select('*, prenda:id_prenda(nombre, categoria)')
     .order('talla')
 
   if (id_prenda) {

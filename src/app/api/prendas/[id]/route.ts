@@ -8,6 +8,17 @@ export async function DELETE(
   const supabase = createServiceClient()
   const { id } = await params  // ← hay que hacer await
 
+  // Primero eliminar los SKUs asociados (FK constraint)
+  const { error: errSku } = await supabase
+    .from('sku')
+    .delete()
+    .eq('id_prenda', id)
+
+  if (errSku) {
+    return NextResponse.json({ error: errSku.message }, { status: 400 })
+  }
+
+  // Luego eliminar la prenda
   const { error } = await supabase
     .from('prenda')
     .delete()
