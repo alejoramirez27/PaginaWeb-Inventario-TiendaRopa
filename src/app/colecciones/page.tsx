@@ -6,7 +6,7 @@ import { Badge }    from '@/components/ui/badge'
 import { Input }    from '@/components/ui/input'
 import { Label }    from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Plus, Zap, Trash2 } from 'lucide-react'
+import { Plus, Zap } from 'lucide-react'
 
 interface Coleccion {
   id_coleccion:      string
@@ -67,14 +67,6 @@ export default function ColeccionesPage() {
     const data = await res.json()
     if (!res.ok) toast.error(data.error ?? 'Error al activar')
     else { toast.success(`"${col.nombre}" activada`); cargar() }
-  }
-
-  const handleEliminar = async (col: Coleccion) => {
-    if (!confirm(`¿Eliminar "${col.nombre}"?`)) return
-    const res  = await fetch(`/api/colecciones/${col.id_coleccion}`, { method: 'DELETE' })
-    const data = await res.json()
-    if (!res.ok) toast.error(data.error ?? 'Error al eliminar')
-    else { toast.success('Colección eliminada'); cargar() }
   }
 
   return (
@@ -182,16 +174,11 @@ export default function ColeccionesPage() {
                     </Badge>
                   </td>
                   <td style={{ padding: '14px 22px' }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {col.estado === 'inactiva' && (
-                        <Button variant="outline" size="icon-sm" onClick={() => handleActivar(col)} title="Activar">
-                          <Zap style={{ width: '12px', height: '12px' }} />
-                        </Button>
-                      )}
-                      <Button variant="destructive" size="icon-sm" onClick={() => handleEliminar(col)} title="Eliminar">
-                        <Trash2 style={{ width: '12px', height: '12px' }} />
+                    {col.estado === 'inactiva' && (
+                      <Button variant="outline" size="icon-sm" onClick={() => handleActivar(col)} title="Activar colección">
+                        <Zap style={{ width: '12px', height: '12px' }} />
                       </Button>
-                    </div>
+                    )}
                   </td>
                 </tr>
               ))}
