@@ -80,6 +80,22 @@ export default function PrendasPage() {
           </h3>
         </div>
 
+        {/* ── Cabeceras de columnas ── */}
+        {!loading && prendas.length > 0 && (
+          <div style={{
+            display: 'grid', gridTemplateColumns: '28px 2fr auto 1fr auto auto',
+            alignItems: 'center', gap: '12px', padding: '8px 22px',
+            borderBottom: '1px solid #27272a',
+          }}>
+            <span />
+            <span style={colHeaderStyle}>Prenda</span>
+            <span style={colHeaderStyle}>Categoría</span>
+            <span style={colHeaderStyle}>Colección</span>
+            <span style={{ ...colHeaderStyle, textAlign: 'center' }}>Estado colección</span>
+            <span style={{ ...colHeaderStyle, textAlign: 'center' }}>Estado prenda</span>
+          </div>
+        )}
+
         {loading ? (
           <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} style={{ height: '56px', borderRadius: '6px' }} />)}
@@ -187,6 +203,11 @@ export default function PrendasPage() {
 const thStyle: React.CSSProperties = {
   padding: '8px 16px', textAlign: 'left',
   fontSize: '10px', color: '#3f3f46', fontWeight: '500',
+  textTransform: 'uppercase', letterSpacing: '1.5px',
+}
+
+const colHeaderStyle: React.CSSProperties = {
+  fontSize: '9px', color: '#3f3f46', fontWeight: '600',
   textTransform: 'uppercase', letterSpacing: '1.5px',
 }
 
